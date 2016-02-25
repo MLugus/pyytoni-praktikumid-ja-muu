@@ -1,6 +1,17 @@
 import os
 import gzip
 import urllib
+
+import argparse
+
+parser = argparse.ArgumentParser(description='Apache log parser')
+parser.add_argument('--path', help='Path to apache log files', 
+	default="/var/log/apache2")
+parser.add_argument('--top_urls', help="Find top URLs", action="store_true")
+parser.add_argument('--geoip', help="Resolve IP-s to country codes", action="store_true")
+
+args = parser.parse_args()
+print("We are expecting logs from"), args.path
  
 # Following is the directory with log files,
 # On Windows substitute it where you downloaded the files
@@ -12,14 +23,14 @@ urls = {}
 users = {}
 total = 0
  
-for filename in os.listdir(root):
+for filename in os.listdir(args.path):
     if not filename.startswith("access.log"):
         print "Skipping unknown file:", filename
         continue
     if filename.endswith(".gz"):
-        fh = gzip.open(os.path.join(root, filename))
+        fh = gzip.open(os.path.join(args.path, filename))
     else:
-        open(os.path.join(root, filename))
+        fh = open(os.path.join(args.path, filename))
     print "Going to process:", filename
     for line in fh:
             total = total + 1
@@ -57,15 +68,18 @@ results.sort(key = lambda item:item[1], reverse=True)
 for keyword, hits in results:
     print keyword, "==>", hits, "(", hits * 100 / total, "%)"
 
-results = urls.items()
-results.sort(key = lambda item:item[1], reverse=True)
-for url, hits in results[:5]:
-    print url, "==>", hits, "(", hits * 100 / total, "%)"
-
 results = users.items()
 results.sort(key = lambda item:item[1], reverse=True)
 for user, transfered_bytes in results[:5]:
     print user, "==>", transfered_bytes / (1024 * 1024), "MB"
+
+if args.top_urls:
+	print
+	print("Top 5 visited URL-s:")
+	results = urls.items()
+	results.sort(key = lambda item:item[1], reverse=True)
+	for path, hits in results[:5]:
+    		print "http://enos.itcollege.ee" + path, "==>", hits, "(", hits * 100 / total, "%)"
 
 
 
